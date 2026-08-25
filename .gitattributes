@@ -1,0 +1,2 @@
+exts/bipedal_locomotion/bipedal_locomotion/assets/usd/DASF_TRON2A/**/*.usd filter=lfs diff=lfs merge=lfs -text
+exts/bipedal_locomotion/bipedal_locomotion/assets/usd/DASF_TRON2A/**/*.STL filter=lfs diff=lfs merge=lfs -text

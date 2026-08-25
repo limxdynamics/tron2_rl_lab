@@ -6,7 +6,9 @@
 code** for the LimX TRON2A bipedal robot on NVIDIA Isaac Sim / Isaac
 Lab: an Isaac Lab extension (`exts/bipedal_locomotion/`), a vendored
 `rsl_rl/` PPO trainer, and Python entry scripts under `scripts/rsl_rl/`
-plus bundled STL / USD robot assets.
+plus bundled STL / USD robot assets for the SF_TRON2A, WF_TRON2A, and
+DASF_TRON2A morphologies. DASF_TRON2A adds a 20-action full-body policy
+over a sole-foot lower body, two arms, and a head.
 
 It contains **no network services, no SDK binaries, no shipped model
 weights, and no calibration secrets**. Its security surface is
@@ -18,9 +20,19 @@ therefore limited, but not zero:
   neighbouring MDP modules shapes policies that may later be
   deployed on real hardware. A change here that trains an unsafe gait
   is a safety issue even though it is not a classical CVE.
+- **DASF_TRON2A whole-body control.** Its independent environment and
+  MDP modules under `tasks/locomotion/cfg/DASF_TRON2A/` additionally
+  shape arm swing, foot/arm coordination, body posture, encoder bias,
+  material properties, and mass/inertia randomization. Incorrect joint
+  order or reward/randomization changes can affect both balance and arm
+  motion on hardware.
 - **Policy export.** `scripts/rsl_rl/play.py:108-118` exports policies
   to ONNX / JIT. A tampered export path could ship an untrusted
   policy to a real robot; treat export code as a trust boundary.
+- **Normalized DASF policy export.** DASF_TRON2A exports the actor with
+  its running observation normalizer and exports the history encoder
+  separately. Dropping, replacing, or applying the wrong normalizer
+  can produce unsafe actions even when the model weights are valid.
 - **Malicious asset payload.** STL / USD files are parsed by third-
   party libraries (Isaac Sim, USD, `trimesh`, etc.). A crafted asset
   in a PR could exploit a downstream parser. Assets are reviewed on
@@ -64,6 +76,8 @@ Please include:
   `scripts/rsl_rl/play.py`, `rsl_rl/rsl_rl/algorithms/ppo.py`, …).
 - A minimal reproducer or proof of concept — for RL / safety issues,
   a task ID plus the config or seed that reproduces the behaviour.
+  For DASF_TRON2A, also include the 20-joint action order and whether
+  the actor normalizer/history encoder came from the same checkpoint.
 - Impact assessment (e.g., "policy export writes outside `logs/`",
   "malformed USD crashes Isaac Sim", "reward term X trains a gait
   that violates a documented safety envelope").

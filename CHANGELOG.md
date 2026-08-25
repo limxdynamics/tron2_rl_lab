@@ -22,6 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `README.md`: SPDX header, "License & attribution" links, "Scope /
   not included" section, "Verification" section, "Cite & support"
   section, and a note that English translation is planned.
+- `DASF_TRON2A` full-body morphology with a sole-foot lower body, two
+  arms, and a head. The task exposes 20 policy actions over 26 movable
+  joints and registers training and Play task IDs.
+- Independent DASF_TRON2A asset, environment, MDP, reward, and agent
+  configurations, including whole-body gait and arm-swing rewards,
+  encoder-bias/material/mass randomization, and speed-dependent
+  posture tolerances.
+- `EmpiricalNormalizedActorCritic` and `NormalizedPPO` for the
+  DASF_TRON2A path, with separate actor/critic running normalizers and
+  normalized JIT/ONNX policy export.
 
 ### Changed
 - `.gitignore`: added an explicit deny-list for training artifacts
@@ -30,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   standard Python cache dirs, on top of the existing rules. The
   existing rules (Omniverse, IDE, Isaac Sim packman, outputs
   globbing) are retained unchanged.
+- Shared task registration, runner selection, and Play export now
+  select the DASF_TRON2A-specific environment and normalization path
+  only when its task/configuration requests them; SF/WF retain their
+  existing behavior.
 
 ### Pending owner sign-off (blocks first public tag)
 
@@ -64,7 +78,10 @@ and must be resolved before cutting the first public tag.
   directory renames (`algorithms/` → `algorithm/`, `runners/` →
   `runner/`), files removed (`utils/`, `actor_critic_recurrent.py`,
   `normalizer.py`), the LimX-added `mlp_encoder.py`, and per-file diff
-  sizes, plus a `diff -ru` reproduce recipe and an update policy.
+  sizes, plus a `diff -ru` reproduce recipe and an update policy. The
+  DASF_TRON2A branch additionally adds `normalized_actor_critic.py`,
+  `normalized_ppo.py`, and conditional runner selection; these deltas
+  must remain listed when the fork-diff report is refreshed.
 - **GPL text in `rsl_rl/licenses/dependencies/codespell-license.txt`**
   — classified as **dev-only** in a new
   [`rsl_rl/licenses/dependencies/README.md`](rsl_rl/licenses/dependencies/README.md).
@@ -79,8 +96,8 @@ and must be resolved before cutting the first public tag.
   `exts/bipedal_locomotion/` that is templated on or derived from
   Isaac Lab and add the required upstream attribution header, or
   rewrite (`THIRD_PARTY_NOTICES.md` §1). Owners: RL lead + legal.
-- **Bundled STL / USD asset provenance.** 22 STL and 10 USD files
-  under `exts/bipedal_locomotion/bipedal_locomotion/assets/usd/{WF,SF}_TRON2A/`
+- **Bundled STL / USD asset provenance.** 58 STL and 15 USD files
+  under `exts/bipedal_locomotion/bipedal_locomotion/assets/usd/{WF,SF,DASF}_TRON2A/`
   need hardware / mechanical sign-off equivalent to what the sibling
   `robot-description` repository records in its `ASSETS.md`
   (`THIRD_PARTY_NOTICES.md` §5). Owners: hardware / mechanical lead.
@@ -110,7 +127,8 @@ First public release. Contents (planned):
 - Vendored fork `rsl_rl/` with PPO trainer and on-policy runner.
 - Entry scripts `scripts/rsl_rl/{train,play}.py` including ONNX / JIT
   policy export.
-- Bundled USD / STL assets for the SF_TRON2A and WF_TRON2A variants.
+- Bundled USD / STL assets for the SF_TRON2A, WF_TRON2A, and
+  DASF_TRON2A variants.
 
 [Unreleased]: https://github.com/limx-tron2/tron2_rl_lab/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/limx-tron2/tron2_rl_lab/releases/tag/v0.1.0

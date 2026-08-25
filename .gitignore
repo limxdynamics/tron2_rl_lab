@@ -69,3 +69,6 @@ dist/
 htmlcov/
 .coverage
 .coverage.*
+
+# Internal
+/DASF_TRON2A_STAGE1_CHANGES.md

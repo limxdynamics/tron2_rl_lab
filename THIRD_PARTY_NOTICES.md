@@ -66,7 +66,12 @@ Owner action required (RL owner + legal):
   → `runner/`); files removed (`utils/`, `actor_critic_recurrent.py`,
   `normalizer.py`); one file added by LimX (`mlp_encoder.py`); the
   `ppo.py` and `on_policy_runner.py` edits are the largest content
-  changes.
+  changes. The DASF_TRON2A integration additionally adds
+  `modules/normalized_actor_critic.py` and
+  `algorithm/normalized_ppo.py`, and extends `on_policy_runner.py` to
+  select those implementations only when requested by the DASF agent
+  configuration. These local deltas must be included the next time
+  `CHANGES_VS_UPSTREAM.md` is regenerated.
 - **Attribution requirement (BSD-3-Clause):** the top-level `NOTICE`
   file, this section, and each source file's header must retain the
   ETH Zurich / NVIDIA copyright notice, the license text, and the
@@ -144,7 +149,15 @@ records in its `ASSETS.md`.
 | `exts/bipedal_locomotion/bipedal_locomotion/assets/usd/WF_TRON2A/usd/*.usd` (incl. `configuration/`) | — | 5 |
 | `exts/bipedal_locomotion/bipedal_locomotion/assets/usd/SF_TRON2A/meshes/*.STL` | 11 | — |
 | `exts/bipedal_locomotion/bipedal_locomotion/assets/usd/SF_TRON2A/usd/*.usd` (incl. `configuration/`) | — | 5 |
-| **Total** | **22** | **10** |
+| `exts/bipedal_locomotion/bipedal_locomotion/assets/usd/DASF_TRON2A/meshes/*.STL` | 36 | — |
+| `exts/bipedal_locomotion/bipedal_locomotion/assets/usd/DASF_TRON2A/usd/*.usd` (incl. `configuration/`) | — | 5 |
+| **Total** | **58** | **15** |
+
+The DASF_TRON2A asset directory also contains two URDF files, two
+Xacro files, and one MuJoCo XML model. They are model sources and
+companion representations for the same morphology and are subject to
+the same first-party provenance and metadata review as the STL/USD
+files above.
 
 > The open-source review that seeded this scaffolding referenced the
 > lower figure of "10 STL / USD assets" because it was performed
@@ -173,11 +186,11 @@ Owner sign-off required (hardware / mechanical lead):
      exts/bipedal_locomotion/bipedal_locomotion/assets/usd/**/*.usd 2>/dev/null || true
    ```
 
-4. Cross-reference the sibling `robot-description` repository — those
-   variants (`WF_TRON2A`, `SF_TRON2A`) ship the same-named meshes
-   there. If the meshes here are copies of the same LimX-owned CAD
-   exports, note that in the sign-off so both repos share one
-   provenance decision.
+4. Cross-reference the sibling `robot-description` repository — the
+  `WF_TRON2A`, `SF_TRON2A`, and `DASF_TRON2A` variants may ship
+  same-named meshes or model sources there. If the files here are
+  copies of the same LimX-owned exports, note that in the sign-off so
+  both repositories share one provenance decision.
 
 ## 6. Isaac Sim / Isaac Lab / PyTorch / other runtime dependencies
 

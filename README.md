@@ -1,5 +1,3 @@
-# English | [中文](README_zh-CN.md)
-
 <!--
   SPDX-FileCopyrightText: 2024-2026 LimX Dynamics Technology Co., Ltd.
   SPDX-License-Identifier: Apache-2.0
@@ -7,6 +5,7 @@
 
 # tron2_rl_lab
 
+[English](README.md) | [中文](README_zh-CN.md)
 
 > **Distribution:** the primary open-source copy of this repository is
 > hosted at
@@ -16,8 +15,9 @@ Reinforcement learning training stack for the LimX **TRON2A** bipedal
 robot, built on top of
 [Isaac Lab](https://isaac-sim.github.io/IsaacLab/) and using PPO to
 train locomotion policies. This repository focuses on flat-terrain
-training for the base morphology and supports both the **SF**
-(sole-foot) and **WF** (wheel-foot) robot variants.
+training and supports the **SF** (sole-foot), **WF** (wheel-foot), and
+**DASF_TRON2A** full-body variants. DASF_TRON2A combines the sole-foot
+lower body with two arms and a head.
 
 ## License & attribution
 
@@ -65,8 +65,8 @@ For a summary of local modifications relative to upstream, see
 - Entry scripts `scripts/rsl_rl/{train,play}.py`, including ONNX /
   JIT policy export
   (`scripts/rsl_rl/play.py:108-118`).
-- Bundled USD / STL assets for the `SF_TRON2A` and `WF_TRON2A`
-  variants under
+- Bundled USD / STL assets for the `SF_TRON2A`, `WF_TRON2A`, and
+  `DASF_TRON2A` variants under
   `exts/bipedal_locomotion/bipedal_locomotion/assets/usd/`.
 - Simulator playback GIFs under `doc/` (MuJoCo, Gazebo, real robot).
 
@@ -139,6 +139,9 @@ python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --num_e
 
 # === Wheelfoot (WF) ===
 python scripts/rsl_rl/train.py --task Isaac-Limx-WF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
+
+# === Dual-arm Solefoot (DASF_TRON2A) ===
+python scripts/rsl_rl/train.py --task Isaac-Limx-DASF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
 ```
 
 *Common options:*
@@ -159,6 +162,12 @@ python scripts/rsl_rl/play.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-Play-v0 --n
 
 # Wheelfoot (WF)
 python scripts/rsl_rl/play.py --task Isaac-Limx-WF-TRON2A-Blind-Flat-Play-v0 --num_envs 32
+
+# Dual-arm Solefoot (DASF_TRON2A)
+python scripts/rsl_rl/play.py \
+  --task Isaac-Limx-DASF-TRON2A-Blind-Flat-Play-v0 \
+  --num_envs 32 \
+  --checkpoint_path <path_to_model.pt>
 ```
 
 *Note:* by default the latest checkpoint is loaded; pass
@@ -175,14 +184,23 @@ python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --resum
 
 # Option B: look up a run by name
 python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --resume True --load_run <run_name>
+
+# Resume DASF_TRON2A
+python scripts/rsl_rl/train.py \
+  --task Isaac-Limx-DASF-TRON2A-Blind-Flat-v0 \
+  --resume True \
+  --checkpoint_path <path_to_model.pt>
 ```
 
 ## Robot morphology
 
-| Morphology | End-effector | task id prefix |
-|---|---|---|
-| SF_TRON2A | sole foot (ankle pitch) | `Isaac-Limx-SF-TRON2A-...` |
-| WF_TRON2A | wheel | `Isaac-Limx-WF-TRON2A-...` |
+| Morphology | Structure | Policy actions | Task ID prefix |
+|---|---|---:|---|
+| SF_TRON2A | Biped with sole feet (ankle pitch) | 10 | `Isaac-Limx-SF-TRON2A-...` |
+| WF_TRON2A | Biped with wheel feet | 10 | `Isaac-Limx-WF-TRON2A-...` |
+| DASF_TRON2A | SF lower body + two arms + head; 26 movable joints | 20 | `Isaac-Limx-DASF-TRON2A-...` |
+
+- [DASF_TRON2A task details](exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/cfg/DASF_TRON2A/README.md)
 
 ## Architecture overview
 
@@ -197,31 +215,46 @@ The project is organized into three main parts:
 
 ### Task wiring flow
 
-Taking `Isaac-Limx-SF-TRON2A-Blind-Flat-v0` as an example:
+Common task wiring:
 
 1. **Gym registration**: in `tasks/locomotion/robots/__init__.py`,
    the environment configuration and PPO configuration are bound to
    the task ID.
-2. **Env cfg**: `tasks/locomotion/robots/limx_solefoot_tron2a_env_cfg.py`
-   defines asset loading and MDP rules.
-3. **Asset cfg**: `assets/config/solefoot_tron2a_cfg.py` specifies
-   the built-in USD path and actuator parameters.
+2. **Env cfg**: SF/WF use `tasks/locomotion/robots/limx_solefoot_tron2a_env_cfg.py`
+   and `tasks/locomotion/robots/limx_wheelfoot_tron2a_env_cfg.py`
+   respectively; DASF_TRON2A is assembled by
+   `tasks/locomotion/robots/limx_dasf_tron2a_env_cfg.py`.
+3. **Asset cfg**: SF/WF use `assets/config/solefoot_tron2a_cfg.py` /
+   `assets/config/wheelfoot_tron2a_cfg.py`; DASF_TRON2A uses
+   `assets/config/dasf_tron2a_cfg.py` for its independent USD and
+   actuator parameters.
+4. **DASF_TRON2A MDP**: scene, observation, event, curriculum, and
+   reward implementations live under `tasks/locomotion/cfg/DASF_TRON2A/`.
+5. **DASF_TRON2A agent**:
+   `tasks/locomotion/agents/dasf_rsl_rl_ppo_cfg.py` selects
+   `NormalizedPPO`, a history encoder, and independent actor/critic
+   observation normalization.
 
 ## MuJoCo simulation and real-hardware deployment
 
 - [MuJoCo simulation repository](https://github.com/example/tron1-mujoco-sim)
 - [Python real-hardware deployment code](https://github.com/example/tron1-deploy-python)
 
-### MuJoCo deployment result (SF / WF)
+### MuJoCo deployment result (SF / WF / DASF_TRON2A)
 
 <p align="center">
   <img src="doc/mujoco_sf.gif" alt="MuJoCo SF" width="48%" />
   <img src="doc/mujoco_wf.gif" alt="MuJoCo WF" width="48%" />
 </p>
 
+<p align="center">
+  <img src="doc/mujoco_dasf.GIF" alt="MuJoCo DASF_TRON2A" width="48%" />
+</p>
+
 - If the previews above do not render, download them directly:
   - [mujoco_sf.gif](doc/mujoco_sf.gif)
   - [mujoco_wf.gif](doc/mujoco_wf.gif)
+  - [mujoco_dasf.GIF](doc/mujoco_dasf.GIF)
 
 ## Gazebo simulation and real-hardware deployment
 
@@ -239,11 +272,15 @@ Taking `Isaac-Limx-SF-TRON2A-Blind-Flat-v0` as an example:
   - [gazebo_sf.gif](doc/gazebo_sf.gif)
   - [gazebo_wf.gif](doc/gazebo_wf.gif)
 
-## Real-hardware deployment results (office scene)
+## Real-hardware deployment results (SF / WF / DASF_TRON2A, office scene)
 
 <p align="center">
-  <img src="doc/real_wf.GIF" alt="TRON2A real-hardware deployment 1" width="48%" />
-  <img src="doc/real_sf.GIF" alt="TRON2A real-hardware deployment 2" width="48%" />
+  <img src="doc/real_wf.GIF" alt="TRON2A WF real-hardware deployment" width="48%" />
+  <img src="doc/real_sf.GIF" alt="TRON2A SF real-hardware deployment" width="48%" />
+</p>
+
+<p align="center">
+  <img src="doc/real_dasf.GIF" alt="DASF_TRON2A real-hardware deployment" width="48%" />
 </p>
 
 ## Real-hardware operating notes (strongly recommended)

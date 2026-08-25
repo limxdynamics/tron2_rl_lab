@@ -67,7 +67,14 @@ class OnPolicyRunner:
             **self.ecd_cfg,
         ).to(self.device)
 
-        actor_critic_class = eval("ActorCritic")  # ActorCritic
+        if train_cfg.get("empirical_normalization", False):
+            from ..modules.normalized_actor_critic import (
+                EmpiricalNormalizedActorCritic,
+            )
+
+            actor_critic_class = EmpiricalNormalizedActorCritic
+        else:
+            actor_critic_class = ActorCritic
         actor_critic: ActorCritic = actor_critic_class(
             self.num_obs
             + encoder.num_output_dim
@@ -77,7 +84,13 @@ class OnPolicyRunner:
             **self.policy_cfg,
         ).to(self.device)
 
-        alg_class = eval(self.alg_cfg.pop("class_name"))
+        alg_class_name = self.alg_cfg.pop("class_name")
+        if alg_class_name == "NormalizedPPO":
+            from ..algorithm.normalized_ppo import NormalizedPPO
+
+            alg_class = NormalizedPPO
+        else:
+            alg_class = eval(alg_class_name)
         self.alg = alg_class(
             self.env.num_envs,
             encoder,

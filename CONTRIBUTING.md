@@ -85,6 +85,9 @@ Optional smoke test on a machine with Isaac Sim:
 ```bash
 python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 \
   --num_envs 16 --headless --max_iterations 2
+
+python scripts/rsl_rl/train.py --task Isaac-Limx-DASF-TRON2A-Blind-Flat-v0 \
+  --num_envs 1 --headless --max_iterations 1
 ```
 
 ## Repository layout
@@ -148,6 +151,15 @@ Bug fixes and reward-shape / config changes that are **specific to
 TRON2A training** belong in `exts/bipedal_locomotion/`, not in
 `rsl_rl/`, unless the underlying algorithm is genuinely broken.
 
+DASF_TRON2A intentionally carries two RSL-RL extensions:
+`rsl_rl/rsl_rl/modules/normalized_actor_critic.py` and
+`rsl_rl/rsl_rl/algorithm/normalized_ppo.py`. The shared runner selects
+them only when the DASF agent requests empirical normalization and
+`class_name="NormalizedPPO"`. Changes to these files or to that
+selection logic must preserve the original ActorCritic/PPO path used
+by SF_TRON2A and WF_TRON2A and must update
+`rsl_rl/CHANGES_VS_UPSTREAM.md`.
+
 ## Adding a new environment or robot variant
 
 Follow the existing Gym-registration pattern:
@@ -174,6 +186,17 @@ Follow the existing Gym-registration pattern:
    Gym-registration smoke checks in
    `.github/workflows/ci.yml` if a per-task check is added.
 
+DASF_TRON2A is an intentional exception to step 1: because its
+20-action whole-body policy, privileged observations, randomization,
+and reward topology differ from the 10-action SF/WF tasks, it owns
+independent files under `tasks/locomotion/cfg/DASF_TRON2A/` instead of
+inheriting the SF/WF environment. Its asset, env wiring, and agent
+entry points are `assets/config/dasf_tron2a_cfg.py`,
+`tasks/locomotion/robots/limx_dasf_tron2a_env_cfg.py`, and
+`tasks/locomotion/agents/dasf_rsl_rl_ppo_cfg.py`. Do not move DASF
+reward or randomization terms into shared SF/WF modules unless the
+behavior is genuinely common to all three morphologies.
+
 ## Reward / termination changes (safety-adjacent)
 
 Files under
@@ -192,6 +215,11 @@ Every PR that touches these modules must:
 - Confirm the change does not remove or weaken a termination that
   guards the hoist / IK / landing sequence in `README.md:142-151`.
 - Add a `CHANGELOG.md` entry under `## [Unreleased]`.
+
+For DASF_TRON2A, this policy also applies to
+`tasks/locomotion/cfg/DASF_TRON2A/{limx_base_env_cfg,mdp,rewards}.py`,
+the normalized actor-critic/PPO path, and the conditional selection in
+`rsl_rl/rsl_rl/runner/on_policy_runner.py`.
 
 ## Do not commit training artifacts
 
@@ -274,6 +302,9 @@ sync history easy to filter.
 - [ ] If touching `rsl_rl/`, `rsl_rl/CHANGES_VS_UPSTREAM.md` is
       updated with the diff versus upstream.
 - [ ] If adding a new task, both `-v0` and `-Play-v0` are registered.
+- [ ] If touching DASF_TRON2A, its 20-action order and independent
+  normalization/export path are verified, and SF/WF still resolve
+  to the original ActorCritic/PPO implementation.
 - [ ] If touching reward / termination, the PR body includes a play
       run or reward-curve evidence.
 - [ ] `THIRD_PARTY_NOTICES.md` updated if any bundled asset or

@@ -108,12 +108,23 @@ def main():
     # export policy to onnx
     if EXPORT_POLICY:
         export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
-        export_policy_as_jit(
-            ppo_runner.alg.actor_critic, export_model_dir
-        )
+        actor_critic = ppo_runner.alg.actor_critic
+        if hasattr(actor_critic, "get_inference_actor"):
+            from rsl_rl.modules.normalized_actor_critic import (
+                export_normalized_policy_as_jit,
+            )
+
+            export_normalized_policy_as_jit(actor_critic, export_model_dir)
+        else:
+            export_policy_as_jit(actor_critic, export_model_dir)
         print("Exported policy as jit script to: ", export_model_dir)
+        inference_actor = (
+            actor_critic.get_inference_actor()
+            if hasattr(actor_critic, "get_inference_actor")
+            else actor_critic.actor
+        )
         export_mlp_as_onnx(
-            ppo_runner.alg.actor_critic.actor, 
+            inference_actor,
             export_model_dir, 
             "policy",
             ppo_runner.alg.actor_critic.num_actor_obs,
