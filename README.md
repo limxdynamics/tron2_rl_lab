@@ -3,13 +3,22 @@
   SPDX-License-Identifier: Apache-2.0
 -->
 
+<p align="center">
+  <img src="doc/banner.png" alt="tron2_rl_lab: reinforcement learning for the LimX TRON2A biped" width="100%" />
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> | <a href="README_zh-CN.md">中文</a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-2f6feb" alt="License: Apache-2.0" /></a>
+  <img src="https://img.shields.io/badge/python-3.10-2f6feb" alt="Python 3.10" />
+  <img src="https://img.shields.io/badge/Isaac%20Sim-5.1-2f6feb" alt="Isaac Sim 5.1" />
+  <img src="https://img.shields.io/badge/Isaac%20Lab-2.3.1-2f6feb" alt="Isaac Lab 2.3.1" />
+</p>
+
 # tron2_rl_lab
-
-[English](README.md) | [中文](README_zh-CN.md)
-
-> **Distribution:** the primary open-source copy of this repository is
-> hosted at
-> [`github.com/limx-tron2/tron2_rl_lab`](https://github.com/limx-tron2/tron2_rl_lab).
 
 Reinforcement learning training stack for the LimX **TRON2A** bipedal
 robot, built on top of
@@ -18,6 +27,351 @@ train locomotion policies. This repository focuses on flat-terrain
 training and supports the **SF** (sole-foot), **WF** (wheel-foot), and
 **DASF_TRON2A** full-body variants. DASF_TRON2A combines the sole-foot
 lower body with two arms and a head.
+
+> **Scope:** flat-terrain, blind (no perception) velocity tracking.
+> Trained policies are not included; you train them here and export
+> TorchScript / ONNX for deployment.
+
+> **Distribution:** the primary open-source copy of this repository is
+> hosted at
+> [`github.com/limx-tron2/tron2_rl_lab`](https://github.com/limx-tron2/tron2_rl_lab).
+
+## Highlights
+
+- **Three morphologies, one stack.** Sole-foot, wheel-foot and the
+  full-body dual-arm DASF_TRON2A each register a training task and a
+  `-Play-v0` task.
+- **Whole-body policy for DASF_TRON2A.** 20 position actions drive both
+  legs and both arms, with arm-swing and foot–arm coordination rewards;
+  wrists and head are held by PD.
+- **Built-in velocity estimator.** An MLP encoder reads 10 steps of
+  observation history and estimates base linear velocity, trained
+  against the simulator's ground truth.
+- **Deployment-ready export.** `play.py` writes TorchScript
+  (`policy.pt`) and ONNX (`policy.onnx`, `encoder.onnx`) next to the
+  checkpoint.
+- **Shown on real hardware.** Policies from this stack running in
+  MuJoCo, in Gazebo (SF / WF) and on the real TRON2A are shown below.
+- **Robot models included.** USD for Isaac Sim, plus URDF, Xacro and
+  MuJoCo MJCF source files for each variant.
+
+## Model lineup
+
+| | Model | Description | DoF | Formats |
+|:---:|---|---|:---:|---|
+| <img src="doc/model_sf.png" alt="SF_TRON2A" width="320" /> | **SF_TRON2A** | Biped with sole feet (ankle pitch). 10 position actions.<br>`Isaac-Limx-SF-TRON2A-Blind-Flat-v0` | 10 | USD · URDF · Xacro · MJCF |
+| <img src="doc/model_wf.png" alt="WF_TRON2A" width="320" /> | **WF_TRON2A** | Biped with wheel feet. 8 leg joints in position control, 2 wheels in velocity control.<br>`Isaac-Limx-WF-TRON2A-Blind-Flat-v0` | 10 | USD · URDF · Xacro · MJCF |
+| <img src="doc/model_dasf.png" alt="DASF_TRON2A" width="320" /> | **DASF_TRON2A** | SF lower body + two arms + head. 20 position actions; 6 wrist / head joints held by PD.<br>`Isaac-Limx-DASF-TRON2A-Blind-Flat-v0` | 26 | USD · URDF · Xacro · MJCF |
+
+Images are rendered in MuJoCo from each variant's bundled robot model
+(`exts/bipedal_locomotion/bipedal_locomotion/assets/usd/<MODEL>/`), same
+camera and lighting for all three.
+
+## Real-hardware deployment results (SF / WF / DASF_TRON2A, office scene)
+
+<p align="center">
+  <img src="doc/real_wf.GIF" alt="TRON2A WF real-hardware deployment" width="48%" />
+  <img src="doc/real_sf.GIF" alt="TRON2A SF real-hardware deployment" width="48%" />
+</p>
+
+<p align="center">
+  <img src="doc/real_dasf.GIF" alt="DASF_TRON2A real-hardware deployment" width="48%" />
+</p>
+
+## How it works
+
+<p align="center">
+  <img src="doc/pipeline_en.png" alt="Training and deployment pipeline" width="100%" />
+</p>
+
+A task ID selects an environment config and a PPO config. Isaac Lab
+steps thousands of environments in parallel (physics at 200 Hz, policy
+at 50 Hz), `rsl_rl` trains the policy, and `play.py` exports it for
+sim-to-sim checks and real-robot deployment.
+
+<p align="center">
+  <img src="doc/policy_io_en.png" alt="Policy inputs and outputs" width="100%" />
+</p>
+
+The actor sees only proprioception, the velocity command and the
+encoder's base-velocity estimate. The critic additionally receives
+privileged simulator state (true base velocity, height scan, joint
+torques, contact forces, mass), which is available only during
+training.
+
+## Quick start
+
+**Look at the robots in 30 seconds** (no Isaac Sim needed):
+
+```bash
+git clone https://github.com/limxdynamics/tron2_rl_lab.git
+cd tron2_rl_lab
+git lfs pull   # DASF_TRON2A meshes are stored with Git LFS
+pip install mujoco
+python -m mujoco.viewer --mjcf=exts/bipedal_locomotion/bipedal_locomotion/assets/usd/DASF_TRON2A/xml/robot.xml
+```
+
+Swap `DASF_TRON2A` for `WF_TRON2A` to view the wheel-foot model.
+
+**Train a policy** (Isaac Sim 5.1 + Isaac Lab 2.3.1 installed, see
+[Installation](#installation)):
+
+```bash
+python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
+```
+
+## Repository layout
+
+```
+.
+├── exts/bipedal_locomotion/   # Isaac Lab extension: env / asset / MDP / robot cfg
+├── rsl_rl/                    # vendored rsl_rl fork (PPO + on-policy runner)
+├── scripts/rsl_rl/            # training / play entry points (train.py / play.py / cli_args.py)
+└── logs/                      # training logs and model weights
+```
+
+## Requirements
+
+- **Isaac Sim 5.1** + **Isaac Lab 2.3.1**
+- Python 3.10
+- GPU (≥ 12 GB VRAM recommended for 4096-env training)
+
+## Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/limxdynamics/tron2_rl_lab.git tron2_rl_lab
+cd tron2_rl_lab
+
+# 2. Editable install of the extension and the vendored rsl_rl
+pip install -e exts/bipedal_locomotion
+pip install -e rsl_rl
+```
+
+## Training in Isaac Sim
+
+Task IDs are registered in
+[exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/robots/__init__.py](exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/robots/__init__.py).
+
+### 1. Training a model
+
+```bash
+# === Solefoot (SF) ===
+python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
+
+# === Wheelfoot (WF) ===
+python scripts/rsl_rl/train.py --task Isaac-Limx-WF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
+
+# === Dual-arm Solefoot (DASF_TRON2A) ===
+python scripts/rsl_rl/train.py --task Isaac-Limx-DASF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
+```
+
+*Common options:*
+- `--checkpoint_path <path>`: resume from a specific `.pt` checkpoint.
+- `--video`: enable video recording.
+- `--max_iterations N`: override the maximum number of iterations.
+
+Log path: `logs/rsl_rl/<experiment_name>/<timestamp>_<run_name>/`
+
+### 2. Running inference (play)
+
+Use the task ID with the `-Play-v0` suffix. The play cfg uses fewer
+envs, disables domain randomization, and simplifies the terrain.
+
+```bash
+# Solefoot (SF)
+python scripts/rsl_rl/play.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-Play-v0 --num_envs 32
+
+# Wheelfoot (WF)
+python scripts/rsl_rl/play.py --task Isaac-Limx-WF-TRON2A-Blind-Flat-Play-v0 --num_envs 32
+
+# Dual-arm Solefoot (DASF_TRON2A)
+python scripts/rsl_rl/play.py \
+  --task Isaac-Limx-DASF-TRON2A-Blind-Flat-Play-v0 \
+  --num_envs 32 \
+  --checkpoint_path <path_to_model.pt>
+```
+
+*Note:* by default the latest checkpoint is loaded; pass
+`--checkpoint_path` to select a specific one.
+
+Play also exports the loaded policy to an `exported/` folder next to
+the checkpoint: `policy.pt` (TorchScript), `policy.onnx` and
+`encoder.onnx`. For DASF_TRON2A the exported actor includes its
+observation normalizer.
+
+### 3. Resuming a training run
+
+`--resume True` must be passed explicitly for a checkpoint to be
+loaded.
+
+```bash
+# Option A: point directly at a .pt file (recommended)
+python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --resume True --checkpoint_path <path_to_model>
+
+# Option B: look up a run by name
+python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --resume True --load_run <run_name>
+
+# Resume DASF_TRON2A
+python scripts/rsl_rl/train.py \
+  --task Isaac-Limx-DASF-TRON2A-Blind-Flat-v0 \
+  --resume True \
+  --checkpoint_path <path_to_model.pt>
+```
+
+## Robot morphology
+
+| Morphology | Structure | Policy actions | Task ID prefix |
+|---|---|---:|---|
+| SF_TRON2A | Biped with sole feet (ankle pitch) | 10 | `Isaac-Limx-SF-TRON2A-...` |
+| WF_TRON2A | Biped with wheel feet | 10 | `Isaac-Limx-WF-TRON2A-...` |
+| DASF_TRON2A | SF lower body + two arms + head; 26 movable joints | 20 | `Isaac-Limx-DASF-TRON2A-...` |
+
+The DASF_TRON2A action vector concatenates 10 lower-body and 10
+upper-body joint targets in a fixed order; real-robot deployment must
+use the same order.
+
+<p align="center">
+  <img src="doc/dasf_actions_en.png" alt="DASF_TRON2A action layout" width="100%" />
+</p>
+
+- [DASF_TRON2A task details](exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/cfg/DASF_TRON2A/README.md)
+
+## Architecture overview
+
+The project is organized into three main parts:
+
+1. **`exts/bipedal_locomotion/`** — Isaac Lab extension. Contains
+   env / asset / MDP / robot cfg.
+2. **`rsl_rl/`** — vendored fork. `scripts/rsl_rl/train.py` prefers
+   the algorithm library from this path.
+3. **`scripts/rsl_rl/`** — entry-point scripts for training and
+   inference.
+
+### Task wiring flow
+
+Common task wiring:
+
+1. **Gym registration**: in `tasks/locomotion/robots/__init__.py`,
+   the environment configuration and PPO configuration are bound to
+   the task ID.
+2. **Env cfg**: SF/WF use `tasks/locomotion/robots/limx_solefoot_tron2a_env_cfg.py`
+   and `tasks/locomotion/robots/limx_wheelfoot_tron2a_env_cfg.py`
+   respectively; DASF_TRON2A is assembled by
+   `tasks/locomotion/robots/limx_dasf_tron2a_env_cfg.py`.
+3. **Asset cfg**: SF/WF use `assets/config/solefoot_tron2a_cfg.py` /
+   `assets/config/wheelfoot_tron2a_cfg.py`; DASF_TRON2A uses
+   `assets/config/dasf_tron2a_cfg.py` for its independent USD and
+   actuator parameters.
+4. **DASF_TRON2A MDP**: scene, observation, event, curriculum, and
+   reward implementations live under `tasks/locomotion/cfg/DASF_TRON2A/`.
+5. **DASF_TRON2A agent**:
+   `tasks/locomotion/agents/dasf_rsl_rl_ppo_cfg.py` selects
+   `NormalizedPPO`, a history encoder, and independent actor/critic
+   observation normalization.
+
+## MuJoCo simulation and real-hardware deployment
+
+- [MuJoCo simulation repository](https://github.com/limxdynamics/tron2_mujoco_sim)
+- [Python real-hardware deployment code](https://github.com/limxdynamics/tron2_rl_deploy_python)
+
+### MuJoCo deployment result (SF / WF / DASF_TRON2A)
+
+<p align="center">
+  <img src="doc/mujoco_sf.gif" alt="MuJoCo SF" width="48%" />
+  <img src="doc/mujoco_wf.gif" alt="MuJoCo WF" width="48%" />
+</p>
+
+<p align="center">
+  <img src="doc/mujoco_dasf.GIF" alt="MuJoCo DASF_TRON2A" width="48%" />
+</p>
+
+- If the previews above do not render, download them directly:
+  - [mujoco_sf.gif](doc/mujoco_sf.gif)
+  - [mujoco_wf.gif](doc/mujoco_wf.gif)
+  - [mujoco_dasf.GIF](doc/mujoco_dasf.GIF)
+
+## Gazebo simulation and real-hardware deployment
+
+- [Gazebo simulation repository](https://github.com/limxdynamics/tron2_gazebo_ros)
+- [ROS real-hardware deployment code](https://github.com/limxdynamics/tron2_rl_deploy_ros)
+
+### Gazebo deployment result (SF / WF)
+
+<p align="center">
+  <img src="doc/gazebo_sf.gif" alt="Gazebo SF" width="48%" />
+  <img src="doc/gazebo_wf.gif" alt="Gazebo WF" width="48%" />
+</p>
+
+- If the previews above do not render, download them directly:
+  - [gazebo_sf.gif](doc/gazebo_sf.gif)
+  - [gazebo_wf.gif](doc/gazebo_wf.gif)
+
+## Real-hardware operating notes (strongly recommended)
+
+<p align="center">
+  <img src="doc/bringup_en.png" alt="Real-robot bring-up sequence" width="100%" />
+</p>
+
+Follow this fixed start-up and landing sequence to avoid impact
+transients when switching policies:
+
+1. **Suspend the robot** so that neither foot is loaded; check joint
+   state, e-stop, and communication.
+2. **Enter IK mode first** and confirm inverse-kinematics control is
+   stable and the pose matches what you commanded.
+3. **Slowly lower the robot to the ground**, watching for smooth
+   contact and any abnormal shaking.
+4. **Only then switch to the walk policy**, verifying at low speed
+   and small stride before ramping up.
+
+If anything abnormal happens (sudden shaking, pose divergence, hard
+impact on landing), trigger the emergency stop immediately, return
+to the suspended state, and re-check.
+
+## Verification
+
+The commands below match what CI runs (see
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml)); running them
+locally before opening a PR saves review round-trips.
+
+```bash
+# 1. Byte-compile every first-party Python file.
+python -m py_compile $(git ls-files '*.py')
+
+# 2. Lint (first-party subtrees; the vendored rsl_rl fork is not
+#    style-gated).
+pip install ruff
+ruff check --select F exts scripts
+
+# 3. Editable-install dry run. Isaac Sim / Isaac Lab are not on
+#    PyPI, so the transitive resolution may fail; the goal is to
+#    validate setup.py / pyproject.toml metadata.
+pip install --dry-run -e exts/bipedal_locomotion
+pip install --dry-run -e rsl_rl
+
+# 4. Optional import smoke on a machine WITH Isaac Sim / Isaac Lab:
+python -c "import bipedal_locomotion; print(bipedal_locomotion.__file__)"
+
+# 5. Ensure no training artifacts / SDK binaries are staged.
+git ls-files | grep -iE \
+  '(^|/)logs/|(^|/)wandb/|\.pt$|\.pth$|\.ckpt$|\.onnx$|events\.out\.tfevents\.' \
+  && echo "!! training artifacts staged" && exit 1 || echo "ok"
+```
+
+On a machine with Isaac Sim 5.1 / Isaac Lab 2.3.1 installed, a short
+end-to-end smoke run is:
+
+```bash
+python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 \
+  --num_envs 16 --headless --max_iterations 2
+```
+
+## Reference
+
+- [Isaac Lab](https://github.com/isaac-sim/IsaacLab)
+- [RSL-RL](https://github.com/leggedrobotics/rsl_rl) — upstream of
+  the vendored fork under [`rsl_rl/`](rsl_rl).
 
 ## License & attribution
 
@@ -97,253 +451,6 @@ Gazebo integration), see the sibling repositories referenced in
 and
 [Gazebo simulation and real-hardware deployment](#gazebo-simulation-and-real-hardware-deployment)
 below.
-
-## Repository layout
-
-```
-.
-├── exts/bipedal_locomotion/   # Isaac Lab extension: env / asset / MDP / robot cfg
-├── rsl_rl/                    # vendored rsl_rl fork (PPO + on-policy runner)
-├── scripts/rsl_rl/            # training / play entry points (train.py / play.py / cli_args.py)
-└── logs/                      # training logs and model weights
-```
-
-## Requirements
-
-- **Isaac Sim 5.1** + **Isaac Lab 2.3.1**
-- Python 3.10
-- GPU (≥ 12 GB VRAM recommended for 4096-env training)
-
-## Installation
-
-```bash
-# 1. Clone the repository
-git clone <repo-url> tron1_rl_lab
-cd tron1_rl_lab
-
-# 2. Editable install of the extension and the vendored rsl_rl
-pip install -e exts/bipedal_locomotion
-pip install -e rsl_rl
-```
-
-## Training in Isaac Sim
-
-Task IDs are registered in
-[exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/robots/__init__.py](exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/robots/__init__.py).
-
-### 1. Training a model
-
-```bash
-# === Solefoot (SF) ===
-python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
-
-# === Wheelfoot (WF) ===
-python scripts/rsl_rl/train.py --task Isaac-Limx-WF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
-
-# === Dual-arm Solefoot (DASF_TRON2A) ===
-python scripts/rsl_rl/train.py --task Isaac-Limx-DASF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
-```
-
-*Common options:*
-- `--checkpoint_path <path>`: resume from a specific `.pt` checkpoint.
-- `--video`: enable video recording.
-- `--max_iterations N`: override the maximum number of iterations.
-
-Log path: `logs/rsl_rl/<experiment_name>/<timestamp>_<run_name>/`
-
-### 2. Running inference (play)
-
-Use the task ID with the `-Play-v0` suffix. The play cfg uses fewer
-envs, disables domain randomization, and simplifies the terrain.
-
-```bash
-# Solefoot (SF)
-python scripts/rsl_rl/play.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-Play-v0 --num_envs 32
-
-# Wheelfoot (WF)
-python scripts/rsl_rl/play.py --task Isaac-Limx-WF-TRON2A-Blind-Flat-Play-v0 --num_envs 32
-
-# Dual-arm Solefoot (DASF_TRON2A)
-python scripts/rsl_rl/play.py \
-  --task Isaac-Limx-DASF-TRON2A-Blind-Flat-Play-v0 \
-  --num_envs 32 \
-  --checkpoint_path <path_to_model.pt>
-```
-
-*Note:* by default the latest checkpoint is loaded; pass
-`--checkpoint_path` to select a specific one.
-
-### 3. Resuming a training run
-
-`--resume True` must be passed explicitly for a checkpoint to be
-loaded.
-
-```bash
-# Option A: point directly at a .pt file (recommended)
-python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --resume True --checkpoint_path <path_to_model>
-
-# Option B: look up a run by name
-python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --resume True --load_run <run_name>
-
-# Resume DASF_TRON2A
-python scripts/rsl_rl/train.py \
-  --task Isaac-Limx-DASF-TRON2A-Blind-Flat-v0 \
-  --resume True \
-  --checkpoint_path <path_to_model.pt>
-```
-
-## Robot morphology
-
-| Morphology | Structure | Policy actions | Task ID prefix |
-|---|---|---:|---|
-| SF_TRON2A | Biped with sole feet (ankle pitch) | 10 | `Isaac-Limx-SF-TRON2A-...` |
-| WF_TRON2A | Biped with wheel feet | 10 | `Isaac-Limx-WF-TRON2A-...` |
-| DASF_TRON2A | SF lower body + two arms + head; 26 movable joints | 20 | `Isaac-Limx-DASF-TRON2A-...` |
-
-- [DASF_TRON2A task details](exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/cfg/DASF_TRON2A/README.md)
-
-## Architecture overview
-
-The project is organized into three main parts:
-
-1. **`exts/bipedal_locomotion/`** — Isaac Lab extension. Contains
-   env / asset / MDP / robot cfg.
-2. **`rsl_rl/`** — vendored fork. `scripts/rsl_rl/train.py` prefers
-   the algorithm library from this path.
-3. **`scripts/rsl_rl/`** — entry-point scripts for training and
-   inference.
-
-### Task wiring flow
-
-Common task wiring:
-
-1. **Gym registration**: in `tasks/locomotion/robots/__init__.py`,
-   the environment configuration and PPO configuration are bound to
-   the task ID.
-2. **Env cfg**: SF/WF use `tasks/locomotion/robots/limx_solefoot_tron2a_env_cfg.py`
-   and `tasks/locomotion/robots/limx_wheelfoot_tron2a_env_cfg.py`
-   respectively; DASF_TRON2A is assembled by
-   `tasks/locomotion/robots/limx_dasf_tron2a_env_cfg.py`.
-3. **Asset cfg**: SF/WF use `assets/config/solefoot_tron2a_cfg.py` /
-   `assets/config/wheelfoot_tron2a_cfg.py`; DASF_TRON2A uses
-   `assets/config/dasf_tron2a_cfg.py` for its independent USD and
-   actuator parameters.
-4. **DASF_TRON2A MDP**: scene, observation, event, curriculum, and
-   reward implementations live under `tasks/locomotion/cfg/DASF_TRON2A/`.
-5. **DASF_TRON2A agent**:
-   `tasks/locomotion/agents/dasf_rsl_rl_ppo_cfg.py` selects
-   `NormalizedPPO`, a history encoder, and independent actor/critic
-   observation normalization.
-
-## MuJoCo simulation and real-hardware deployment
-
-- [MuJoCo simulation repository](https://github.com/example/tron1-mujoco-sim)
-- [Python real-hardware deployment code](https://github.com/example/tron1-deploy-python)
-
-### MuJoCo deployment result (SF / WF / DASF_TRON2A)
-
-<p align="center">
-  <img src="doc/mujoco_sf.gif" alt="MuJoCo SF" width="48%" />
-  <img src="doc/mujoco_wf.gif" alt="MuJoCo WF" width="48%" />
-</p>
-
-<p align="center">
-  <img src="doc/mujoco_dasf.GIF" alt="MuJoCo DASF_TRON2A" width="48%" />
-</p>
-
-- If the previews above do not render, download them directly:
-  - [mujoco_sf.gif](doc/mujoco_sf.gif)
-  - [mujoco_wf.gif](doc/mujoco_wf.gif)
-  - [mujoco_dasf.GIF](doc/mujoco_dasf.GIF)
-
-## Gazebo simulation and real-hardware deployment
-
-- [Gazebo simulation repository](https://github.com/example/tron1-gazebo-sim)
-- [ROS real-hardware deployment code](https://github.com/example/tron1-deploy-cpp)
-
-### Gazebo deployment result (SF / WF)
-
-<p align="center">
-  <img src="doc/gazebo_sf.gif" alt="Gazebo SF" width="48%" />
-  <img src="doc/gazebo_wf.gif" alt="Gazebo WF" width="48%" />
-</p>
-
-- If the previews above do not render, download them directly:
-  - [gazebo_sf.gif](doc/gazebo_sf.gif)
-  - [gazebo_wf.gif](doc/gazebo_wf.gif)
-
-## Real-hardware deployment results (SF / WF / DASF_TRON2A, office scene)
-
-<p align="center">
-  <img src="doc/real_wf.GIF" alt="TRON2A WF real-hardware deployment" width="48%" />
-  <img src="doc/real_sf.GIF" alt="TRON2A SF real-hardware deployment" width="48%" />
-</p>
-
-<p align="center">
-  <img src="doc/real_dasf.GIF" alt="DASF_TRON2A real-hardware deployment" width="48%" />
-</p>
-
-## Real-hardware operating notes (strongly recommended)
-
-Follow this fixed start-up and landing sequence to avoid impact
-transients when switching policies:
-
-1. **Suspend the robot** so that neither foot is loaded; check joint
-   state, e-stop, and communication.
-2. **Enter IK mode first** and confirm inverse-kinematics control is
-   stable and the pose matches what you commanded.
-3. **Slowly lower the robot to the ground**, watching for smooth
-   contact and any abnormal shaking.
-4. **Only then switch to the walk policy**, verifying at low speed
-   and small stride before ramping up.
-
-If anything abnormal happens (sudden shaking, pose divergence, hard
-impact on landing), trigger the emergency stop immediately, return
-to the suspended state, and re-check.
-
-## Verification
-
-The commands below match what CI runs (see
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml)); running them
-locally before opening a PR saves review round-trips.
-
-```bash
-# 1. Byte-compile every first-party Python file.
-python -m py_compile $(git ls-files '*.py')
-
-# 2. Lint (first-party subtrees; the vendored rsl_rl fork is not
-#    style-gated).
-pip install ruff
-ruff check --select F exts scripts
-
-# 3. Editable-install dry run. Isaac Sim / Isaac Lab are not on
-#    PyPI, so the transitive resolution may fail; the goal is to
-#    validate setup.py / pyproject.toml metadata.
-pip install --dry-run -e exts/bipedal_locomotion
-pip install --dry-run -e rsl_rl
-
-# 4. Optional import smoke on a machine WITH Isaac Sim / Isaac Lab:
-python -c "import bipedal_locomotion; print(bipedal_locomotion.__file__)"
-
-# 5. Ensure no training artifacts / SDK binaries are staged.
-git ls-files | grep -iE \
-  '(^|/)logs/|(^|/)wandb/|\.pt$|\.pth$|\.ckpt$|\.onnx$|events\.out\.tfevents\.' \
-  && echo "!! training artifacts staged" && exit 1 || echo "ok"
-```
-
-On a machine with Isaac Sim 5.1 / Isaac Lab 2.3.1 installed, a short
-end-to-end smoke run is:
-
-```bash
-python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 \
-  --num_envs 16 --headless --max_iterations 2
-```
-
-## Reference
-
-- [Isaac Lab](https://github.com/isaac-sim/IsaacLab)
-- [RSL-RL](https://github.com/leggedrobotics/rsl_rl) — upstream of
-  the vendored fork under [`rsl_rl/`](rsl_rl).
 
 ## Cite & support
 

@@ -32,6 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EmpiricalNormalizedActorCritic` and `NormalizedPPO` for the
   DASF_TRON2A path, with separate actor/critic running normalizers and
   normalized JIT/ONNX policy export.
+- README visuals under `doc/`: `banner.png` (1600x640),
+  `social_preview.png` (1280x640, for GitHub Settings -> Social
+  preview), model cards `model_{sf,wf,dasf}.png` (800x800, rendered in
+  MuJoCo from the bundled robot models), and English / Chinese diagrams
+  `pipeline_{en,zh}.png`, `policy_io_{en,zh}.png`,
+  `dasf_actions_{en,zh}.png`, `bringup_{en,zh}.png`. All PNGs carry no
+  metadata chunks.
 
 ### Changed
 - `.gitignore`: added an explicit deny-list for training artifacts
@@ -44,6 +51,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   select the DASF_TRON2A-specific environment and normalization path
   only when its task/configuration requests them; SF/WF retain their
   existing behavior.
+- `README.md` / `README_zh-CN.md` restructured in parallel: banner,
+  badges, highlights, model lineup table, real-robot results,
+  pipeline and policy I/O diagrams, a MuJoCo-only quick start, then the
+  existing install / training / deployment sections; license, scope and
+  support text moved to the end unchanged. Installation now clones
+  `limxdynamics/tron2_rl_lab` (was a `<repo-url> tron1_rl_lab`
+  placeholder), and the MuJoCo / Gazebo / deployment links now point to
+  `limxdynamics/tron2_mujoco_sim`, `tron2_rl_deploy_python`,
+  `tron2_gazebo_ros` and `tron2_rl_deploy_ros` (were
+  `github.com/example/tron1-*` placeholders).
 
 ### Pending owner sign-off (blocks first public tag)
 
