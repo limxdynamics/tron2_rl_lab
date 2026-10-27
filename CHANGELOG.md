@@ -81,6 +81,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `THIRD_PARTY_NOTICES.md`, `CONTRIBUTING.md`, `SECURITY.md`: references
   to README line numbers, which no longer matched, now name the README
   section instead.
+- `doc/mujoco_{sf,wf}.gif`, `doc/mujoco_dasf.GIF`, `doc/gazebo_{sf,wf}.gif`:
+  cropped to the robot. The desktop taskbar, window title bar and the
+  MuJoCo / Gazebo side panels and toolbars are removed, and a 4:3 window
+  follows the robot so it fills about half the frame height instead of
+  about a tenth. Frame count and timing are unchanged; output is
+  420 × 315 with no metadata (`mujoco_dasf.GIF` 28 MB → 5 MB).
 
 ### Fixed
 - README: the training "common options" listed `--checkpoint_path` as
