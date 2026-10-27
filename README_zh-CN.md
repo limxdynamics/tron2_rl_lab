@@ -28,9 +28,6 @@
 > **适用范围：** 平地、无感知（Blind）的速度跟踪任务。仓库不附带训练好的
 > 策略；在这里训练后可导出 TorchScript / ONNX 用于部署。
 
-> **发布渠道：** 本仓库的开源主副本托管于
-> [`github.com/limx-tron2/tron2_rl_lab`](https://github.com/limx-tron2/tron2_rl_lab)。
-
 ## 亮点
 
 - **三种形态，一套训练栈。** 点足（sole-foot）、轮足（wheel-foot）和带双臂的
@@ -40,11 +37,8 @@
 - **内置速度估计器。** MLP 编码器读取 10 步观测历史，估计机身线速度，并以
   仿真真值为监督训练。
 - **导出即可部署。** `play.py` 在 checkpoint 旁导出 TorchScript
-  （`policy.pt`）和 ONNX（`policy.onnx`、`encoder.onnx`）。
-- **实机验证。** 下文展示了本训练栈的策略在 MuJoCo、Gazebo（SF / WF）和
-  TRON2A 实机上的运行效果。
-- **附带机器人模型。** 每个形态都提供 Isaac Sim 用的 USD，以及 URDF、Xacro
-  和 MuJoCo MJCF 源文件。
+  （`policy.pt`）和 ONNX（`policy.onnx`、`encoder.onnx`）；在 MuJoCo、
+  Gazebo 和 TRON2A 实机上的效果见下文。
 
 ## 型号一览
 
@@ -56,17 +50,40 @@
 
 图片由 MuJoCo 根据各形态自带的机器人模型
 （`exts/bipedal_locomotion/bipedal_locomotion/assets/usd/<MODEL>/`）渲染，
-三者使用相同的相机和灯光。
+三者使用相同的相机和灯光。每个任务都有对应的 `-Play-v0` 版本（例如
+`Isaac-Limx-SF-TRON2A-Blind-Flat-Play-v0`）。
 
-## 实机部署效果（SF / WF / DASF_TRON2A，办公室场景）
+DASF_TRON2A 的动作向量按固定顺序拼接 10 个下半身和 10 个上半身关节目标；
+实机部署必须使用相同顺序。另见
+[DASF_TRON2A 任务说明](exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/cfg/DASF_TRON2A/README.md)。
 
 <p align="center">
-  <img src="doc/real_wf.GIF" alt="TRON2A WF 实机部署效果" width="48%" />
-  <img src="doc/real_sf.GIF" alt="TRON2A SF 实机部署效果" width="48%" />
+  <img src="doc/dasf_actions_zh.png" alt="DASF_TRON2A 动作布局" width="100%" />
 </p>
 
+## 实机与仿真效果
+
+**TRON2A 实机**（SF / WF / DASF_TRON2A，办公室场景）：
+
 <p align="center">
-  <img src="doc/real_dasf.GIF" alt="DASF_TRON2A 实机部署效果" width="48%" />
+  <img src="doc/real_wf.GIF" alt="TRON2A WF 实机部署效果" width="32%" />
+  <img src="doc/real_sf.GIF" alt="TRON2A SF 实机部署效果" width="32%" />
+  <img src="doc/real_dasf.GIF" alt="DASF_TRON2A 实机部署效果" width="32%" />
+</p>
+
+**MuJoCo**（SF / WF / DASF_TRON2A）：
+
+<p align="center">
+  <img src="doc/mujoco_sf.gif" alt="MuJoCo SF" width="32%" />
+  <img src="doc/mujoco_wf.gif" alt="MuJoCo WF" width="32%" />
+  <img src="doc/mujoco_dasf.GIF" alt="MuJoCo DASF_TRON2A" width="32%" />
+</p>
+
+**Gazebo**（SF / WF）：
+
+<p align="center">
+  <img src="doc/gazebo_sf.gif" alt="Gazebo SF" width="32%" />
+  <img src="doc/gazebo_wf.gif" alt="Gazebo WF" width="32%" />
 </p>
 
 ## 工作原理
@@ -107,23 +124,13 @@ python -m mujoco.viewer --mjcf=exts/bipedal_locomotion/bipedal_locomotion/assets
 python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
 ```
 
-## 仓库结构
-
-```
-.
-├── exts/bipedal_locomotion/   # Isaac Lab extension：env/asset/MDP/robot cfg
-├── rsl_rl/                    # 项目内 vendored 的 rsl_rl fork（PPO + on-policy runner）
-├── scripts/rsl_rl/            # 训练 / play 入口（train.py / play.py / cli_args.py）
-└── logs/                      # 训练日志与模型权重
-```
-
-## 环境要求
-
-- **Isaac Sim 5.1** + **Isaac Lab 2.3.1**
-- Python 3.10
-- GPU（推荐 ≥ 12 GB 显存，4096 envs 训练）
-
 ## 安装
+
+环境要求：
+
+- **Isaac Sim 5.1** + **Isaac Lab 2.3.1**，需自行从 NVIDIA 获取（见 [适用范围](#适用范围)）
+- Python 3.10
+- CUDA 兼容 GPU（4096 envs 训练推荐 ≥ 12 GB 显存）
 
 ```bash
 # 1. clone 仓库
@@ -135,100 +142,54 @@ pip install -e exts/bipedal_locomotion
 pip install -e rsl_rl
 ```
 
-## IsaacSim 训练
+## 训练、推理与续训
 
-任务 ID 均在 [exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/robots/__init__.py](exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/robots/__init__.py) 中注册。
+将 `<TASK>` 替换为 [型号一览](#型号一览) 中的任务 ID。任务 ID 均在
+[exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/robots/__init__.py](exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/robots/__init__.py) 中注册。
 
-### 1. 训练模型
-
-```bash
-# === Solefoot (SF) ===
-python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
-
-# === Wheelfoot (WF) ===
-python scripts/rsl_rl/train.py --task Isaac-Limx-WF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
-
-# === Dual-arm Solefoot (DASF_TRON2A) ===
-python scripts/rsl_rl/train.py --task Isaac-Limx-DASF-TRON2A-Blind-Flat-v0 --num_envs 4096 --headless
-```
-
-*常用选项：*
-- `--checkpoint_path <path>`: 从某 .pt 恢复。
-- `--video`: 开启录像。
-- `--max_iterations N`: 覆盖最大迭代数。
-
-日志路径：`logs/rsl_rl/<experiment_name>/<timestamp>_<run_name>/`
-
-### 2. 运行推理 (Play)
-
-用 `-Play-v0` 后缀的任务 ID。Play cfg 使用更少 env、关闭域随机化、简化地形。
+**训练：**
 
 ```bash
-# Solefoot (SF)
-python scripts/rsl_rl/play.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-Play-v0 --num_envs 32
-
-# Wheelfoot (WF)
-python scripts/rsl_rl/play.py --task Isaac-Limx-WF-TRON2A-Blind-Flat-Play-v0 --num_envs 32
-
-# Dual-arm Solefoot (DASF_TRON2A)
-python scripts/rsl_rl/play.py \
-  --task Isaac-Limx-DASF-TRON2A-Blind-Flat-Play-v0 \
-  --num_envs 32 \
-  --checkpoint_path <path_to_model.pt>
+python scripts/rsl_rl/train.py --task <TASK> --num_envs 4096 --headless
 ```
 
-*注意：* 默认加载最新 checkpoint，指定路径可用 `--checkpoint_path`。
+常用选项：`--video` 开启录像，`--max_iterations N` 覆盖最大迭代数。日志与
+checkpoint 保存在 `logs/rsl_rl/<experiment_name>/<timestamp>_<run_name>/`。
 
+**推理与导出（Play）：** 使用带 `-Play-v0` 后缀的任务 ID。Play cfg 使用更少
+env、关闭域随机化、简化地形。
+
+```bash
+python scripts/rsl_rl/play.py --task <TASK-with-Play-v0> --num_envs 32
+```
+
+默认加载最新 checkpoint，指定文件可用 `--checkpoint_path <path_to_model.pt>`。
 Play 同时会把加载的策略导出到 checkpoint 旁的 `exported/` 目录：
 `policy.pt`（TorchScript）、`policy.onnx` 和 `encoder.onnx`。DASF_TRON2A
 导出的 actor 已包含观测归一化。
 
-### 3. Resume 续训
-
-必须显式带 `--resume True` 才会加载 checkpoint。
+**续训（Resume）：** 必须显式带 `--resume True` 才会加载 checkpoint。可直接给
+`.pt` 路径（推荐），或按 run 名查找：
 
 ```bash
-# 方式 A：直接给 .pt 路径（推荐）
-python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --resume True --checkpoint_path <path_to_model>
-
-# 方式 B：按 run 名查找
-python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 --resume True --load_run <run_name>
-
-# DASF_TRON2A 续训
-python scripts/rsl_rl/train.py \
-  --task Isaac-Limx-DASF-TRON2A-Blind-Flat-v0 \
-  --resume True \
-  --checkpoint_path <path_to_model.pt>
+python scripts/rsl_rl/train.py --task <TASK> --resume True --checkpoint_path <path_to_model.pt>
+python scripts/rsl_rl/train.py --task <TASK> --resume True --load_run <run_name>
 ```
 
-## 机器人形态
+## 仓库结构与任务配置流程
 
-| 形态 | 结构 | 策略动作 | Task ID 前缀 |
-|---|---|---:|---|
-| SF_TRON2A | 双足 sole foot（ankle pitch） | 10 | `Isaac-Limx-SF-TRON2A-...` |
-| WF_TRON2A | 双足 wheel foot | 10 | `Isaac-Limx-WF-TRON2A-...` |
-| DASF_TRON2A | SF 双足 + 双臂 + 头部，26 个可动关节 | 20 | `Isaac-Limx-DASF-TRON2A-...` |
+```
+.
+├── exts/bipedal_locomotion/   # Isaac Lab extension：env/asset/MDP/robot cfg，
+│                              # 机器人模型位于 bipedal_locomotion/assets/usd/
+├── rsl_rl/                    # 项目内 vendored 的 rsl_rl fork（PPO + on-policy runner），
+│                              # scripts/rsl_rl/train.py 优先加载此路径
+├── scripts/rsl_rl/            # 训练 / play 入口（train.py / play.py / cli_args.py）
+├── doc/                       # README 图片及 MuJoCo / Gazebo / 实机 GIF
+└── logs/                      # 训练日志与模型权重（不提交）
+```
 
-DASF_TRON2A 的动作向量按固定顺序拼接 10 个下半身和 10 个上半身关节目标；
-实机部署必须使用相同顺序。
-
-<p align="center">
-  <img src="doc/dasf_actions_zh.png" alt="DASF_TRON2A 动作布局" width="100%" />
-</p>
-
-- [DASF_TRON2A 任务说明](exts/bipedal_locomotion/bipedal_locomotion/tasks/locomotion/cfg/DASF_TRON2A/README.md)
-
-## 架构概览
-
-项目分为三个主要部分：
-
-1. **`exts/bipedal_locomotion/`** — Isaac Lab extension。包含 env / asset / MDP / robot cfg。
-2. **`rsl_rl/`** — vendored fork。`scripts/rsl_rl/train.py` 会优先加载此路径下的算法库。
-3. **`scripts/rsl_rl/`** — 训练与推理的入口脚本。
-
-### 任务 Wiring 流程
-
-通用任务 wiring：
+任务 ID 的装配流程：
 
 1. **Gym 注册**：在 `tasks/locomotion/robots/__init__.py` 中将环境配置与 PPO 配置绑定到任务 ID。
 2. **环境配置 (Env cfg)**：SF/WF 分别使用
@@ -245,42 +206,12 @@ DASF_TRON2A 的动作向量按固定顺序拼接 10 个下半身和 10 个上半
 5. **DASF_TRON2A agent**：`tasks/locomotion/agents/dasf_rsl_rl_ppo_cfg.py` 使用
    `NormalizedPPO`、history encoder 和独立 actor/critic normalization。
 
-## MuJoCo 仿真与实机部署
+## 仿真验证与实机部署
 
-- [MuJoCo 仿真仓库](https://github.com/limxdynamics/tron2_mujoco_sim)
-- [Python实机部署代码](https://github.com/limxdynamics/tron2_rl_deploy_python)
-
-### MuJoCo 部署效果（SF / WF / DASF_TRON2A）
-
-<p align="center">
-  <img src="doc/mujoco_sf.gif" alt="MuJoCo SF" width="48%" />
-  <img src="doc/mujoco_wf.gif" alt="MuJoCo WF" width="48%" />
-</p>
-
-<p align="center">
-  <img src="doc/mujoco_dasf.GIF" alt="MuJoCo DASF_TRON2A" width="48%" />
-</p>
-
-- 无法直接预览时可下载查看：
-  - [mujoco_sf.gif](doc/mujoco_sf.gif)
-  - [mujoco_wf.gif](doc/mujoco_wf.gif)
-  - [mujoco_dasf.GIF](doc/mujoco_dasf.GIF)
-
-## Gazebo 仿真与实机部署
-
-- [Gazebo 仿真仓库](https://github.com/limxdynamics/tron2_gazebo_ros)
-- [ROS实机部署代码](https://github.com/limxdynamics/tron2_rl_deploy_ros)
-
-### Gazebo 部署效果（SF / WF）
-
-<p align="center">
-  <img src="doc/gazebo_sf.gif" alt="Gazebo SF" width="48%" />
-  <img src="doc/gazebo_wf.gif" alt="Gazebo WF" width="48%" />
-</p>
-
-- 无法直接预览时可下载查看：
-  - [gazebo_sf.gif](doc/gazebo_sf.gif)
-  - [gazebo_wf.gif](doc/gazebo_wf.gif)
+| | 仿真 | 实机部署 |
+|---|---|---|
+| MuJoCo + Python | [tron2_mujoco_sim](https://github.com/limxdynamics/tron2_mujoco_sim) | [tron2_rl_deploy_python](https://github.com/limxdynamics/tron2_rl_deploy_python) |
+| Gazebo + ROS（SF / WF） | [tron2_gazebo_ros](https://github.com/limxdynamics/tron2_gazebo_ros) | [tron2_rl_deploy_ros](https://github.com/limxdynamics/tron2_rl_deploy_ros) |
 
 ## 实机运行注意事项（强烈建议）
 
@@ -297,42 +228,25 @@ DASF_TRON2A 的动作向量按固定顺序拼接 10 个下半身和 10 个上半
 
 如出现异常（突发抖动、姿态发散、落地后冲击过大），请立即急停并回到吊起状态重新检查。
 
-## 验证
+## 参与贡献
 
-下列命令与 CI 运行的内容一致（详见
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml)），在提交 PR
-前本地跑一遍可减少来回沟通。
+与 CI 一致的本地检查命令及简短的端到端冒烟训练，见
+[CONTRIBUTING.md](CONTRIBUTING.md#verification-before-opening-a-pr)。
 
-```bash
-# 1. 对全部一方 Python 文件做字节码编译。
-python -m py_compile $(git ls-files '*.py')
+## 适用范围
 
-# 2. Lint（仅一方子目录；内嵌的 rsl_rl fork 不做风格约束）。
-pip install ruff
-ruff check --select F exts scripts
+**不包含** — 有意为之：
 
-# 3. Editable-install dry run。Isaac Sim / Isaac Lab 不在 PyPI，
-#    传递依赖解析可能失败；此步目的是校验 setup.py / pyproject.toml
-#    的元数据。
-pip install --dry-run -e exts/bipedal_locomotion
-pip install --dry-run -e rsl_rl
-
-# 4. 在装有 Isaac Sim / Isaac Lab 的机器上做可选的 import 冒烟：
-python -c "import bipedal_locomotion; print(bipedal_locomotion.__file__)"
-
-# 5. 确认没有训练产物 / SDK 二进制被暂存。
-git ls-files | grep -iE \
-  '(^|/)logs/|(^|/)wandb/|\.pt$|\.pth$|\.ckpt$|\.onnx$|events\.out\.tfevents\.' \
-  && echo "!! training artifacts staged" && exit 1 || echo "ok"
-```
-
-在装有 Isaac Sim 5.1 / Isaac Lab 2.3.1 的机器上，可以跑一次简短的
-端到端冒烟：
-
-```bash
-python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 \
-  --num_envs 16 --headless --max_iterations 2
-```
+- **不含训练后的策略**（`*.pt`、`*.pth`、`*.ckpt`、`*.onnx`、
+  `*.jit`）。请自行训练。
+- **不含训练日志、TensorBoard events 或 Weights & Biases 记录。**
+  `logs/`、`wandb/`、`events.out.tfevents.*` 均被 `.gitignore`
+  屏蔽并在 CI 中拦截。
+- **不含 Isaac Sim 的再分发。** 必须自行从 NVIDIA 获取 Isaac Sim
+  5.1 并接受 NVIDIA 专有 EULA，才可安装本训练栈。本仓库不授予
+  Isaac Sim 的任何许可。
+- **不含 GPU / 驱动。** 本仓库不附带驱动、CUDA 或 PyTorch wheel。
+- **不含 SDK 二进制、固件、标定值、客户配置或厂商 CAD。**
 
 ## 参考资料
 
@@ -370,44 +284,8 @@ python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 \
   `CONTRIBUTING.md#vendored-rsl_rl-update-policy`）。
 
 对上游的本地修改摘要见
-[`CHANGES_VS_UPSTREAM.md`](CHANGES_VS_UPSTREAM.md) 与
-[`licenses/dependencies/README.md`](licenses/dependencies/README.md)。
-
-## 适用范围与除外
-
-本仓库 **包含**：
-
-- Isaac Lab 扩展 `exts/bipedal_locomotion/`，含 TRON2A 的 env /
-  MDP / actuator / robot cfg。
-- 内嵌的 `rsl_rl/` PPO 训练器与 on-policy runner。
-- 入口脚本 `scripts/rsl_rl/{train,play}.py`，含 ONNX / JIT 策略
-  导出（`scripts/rsl_rl/play.py:108-118`）。
-- `SF_TRON2A`、`WF_TRON2A` 与 `DASF_TRON2A` 变体的 USD / STL 资产，位于
-  `exts/bipedal_locomotion/bipedal_locomotion/assets/usd/`。
-- 位于 `doc/` 的仿真回放 GIF（MuJoCo、Gazebo、实机）。
-
-**不包含** — 有意为之：
-
-- **不含训练后的策略**（`*.pt`、`*.pth`、`*.ckpt`、`*.onnx`、
-  `*.jit`）。请自行训练，或从 LimX 内部制品库 / GitHub Release
-  获取。
-- **不含训练日志、TensorBoard events 或 Weights & Biases 记录。**
-  `logs/`、`wandb/`、`events.out.tfevents.*` 均被 `.gitignore`
-  屏蔽并在 CI 中拦截。
-- **暂无测试套件。** CI 仅覆盖 `python -m py_compile`、`ruff`、
-  违禁产物扫描与许可扫描。在无头 GPU worker 上跑一次冒烟训练
-  作为后续工作跟踪。
-- **不含 Isaac Sim 的再分发。** 必须自行从 NVIDIA 获取 Isaac Sim
-  5.1 并接受 NVIDIA 专有 EULA，才可安装本训练栈。本仓库不授予
-  Isaac Sim 的任何许可。
-- **不含 GPU / 驱动。** 4096-env 训练需要 CUDA 兼容 GPU
-  （推荐显存 ≥ 12 GB）。本仓库不附带驱动、CUDA 或 PyTorch wheel。
-- **不含 SDK 二进制、固件、标定值、客户配置或厂商 CAD。**
-
-实机部署代码（实机上电、ROS 驱动、MuJoCo / Gazebo 集成）请参考
-下文
-[MuJoCo 仿真与实机部署](#mujoco-仿真与实机部署) 与
-[Gazebo 仿真与实机部署](#gazebo-仿真与实机部署) 中引用的姊妹仓库。
+[`CHANGES_VS_UPSTREAM.md`](rsl_rl/CHANGES_VS_UPSTREAM.md) 与
+[`licenses/dependencies/README.md`](rsl_rl/licenses/dependencies/README.md)。
 
 ## 引用与支持
 
@@ -418,12 +296,12 @@ python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 \
   title  = {tron2_rl_lab: RL training stack for the LimX TRON2A bipedal robot},
   author = {LimX Dynamics},
   year   = {2026},
-  howpublished = {\url{https://github.com/limx-tron2/tron2_rl_lab}}
+  howpublished = {\url{https://github.com/limxdynamics/tron2_rl_lab}}
 }
 ```
 
-- **Bug 反馈 / 功能建议：** [GitHub Issues](https://github.com/limx-tron2/tron2_rl_lab/issues)。
-- **问题咨询 / 集成协助：** [GitHub Discussions](https://github.com/limx-tron2/tron2_rl_lab/discussions)。
+- **Bug 反馈 / 功能建议：** [GitHub Issues](https://github.com/limxdynamics/tron2_rl_lab/issues)。
+- **问题咨询 / 集成协助：** [GitHub Discussions](https://github.com/limxdynamics/tron2_rl_lab/discussions)。
 - **安全漏洞报告：** 邮件 `contact@limxdynamics.com`，另见
   [`SECURITY.md`](SECURITY.md)。
 - **硬件 / 实机安全事件：** 邮件 `contact@limxdynamics.com`，

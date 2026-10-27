@@ -54,7 +54,7 @@ Owner action required (RL owner + legal):
   ```
 
 - **Upstream:** <https://github.com/leggedrobotics/rsl_rl>
-- **Nature:** vendored fork (see `README.md:10`). The tree here is
+- **Nature:** vendored fork (see the README section "Repository layout and task wiring"). The tree here is
   edited and shipped in-tree; `scripts/rsl_rl/*.py` imports the local
   copy in preference to any pip-installed `rsl_rl`.
 - **Upstream tag / commit:** **`v2.0.1`** — commit
@@ -216,7 +216,7 @@ stack; nothing in this repository grants a license to Isaac Sim.
 ## 7. Documentation media
 
 `doc/` contains simulator recordings and real-robot recordings that
-appear in `README.md:105-140`:
+appear in the README section "Results on the real robot and in simulation":
 
 | Path | Kind | Provenance | Content review |
 |------|------|------------|----------------|
@@ -227,7 +227,7 @@ appear in `README.md:105-140`:
 | `doc/real_sf.GIF` | Real-robot recording (office scene) | LimX lab footage | `⚠ TO CONFIRM` |
 | `doc/real_wf.GIF` | Real-robot recording (office scene) | LimX lab footage | `⚠ TO CONFIRM` |
 
-`README.md:135-139` calls the real-robot clips out as "办公室场景"
+That README section calls the real-robot clips out as "办公室场景"
 (office scene) footage. Owner review required:
 
 - No identifiable individuals (faces, badges, name plates) are visible.

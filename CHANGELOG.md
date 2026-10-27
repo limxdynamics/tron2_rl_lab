@@ -61,6 +61,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `limxdynamics/tron2_mujoco_sim`, `tron2_rl_deploy_python`,
   `tron2_gazebo_ros` and `tron2_rl_deploy_ros` (were
   `github.com/example/tron1-*` placeholders).
+- `README.md` / `README_zh-CN.md` consolidated (about 476 → 346 and
+  431 → 309 lines): the "Robot morphology" table, "Architecture
+  overview" list and "Scope → Included" list repeated the model lineup
+  and repository layout and are folded into them; the separate MuJoCo
+  and Gazebo sections become one GIF block plus a deployment-repo
+  table; per-variant train / play / resume commands become one
+  `<TASK>` command each; the CI command list moves to
+  `CONTRIBUTING.md`; maintainer-only scope notes (no test suite yet,
+  internal artifact store) are dropped. License & attribution text is
+  unchanged apart from two link targets that pointed at files that do
+  not exist at the repository root (`rsl_rl/CHANGES_VS_UPSTREAM.md`,
+  `rsl_rl/licenses/dependencies/README.md`).
+- Repository, citation, Issues and Discussions links in the READMEs,
+  `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/config.yml` and this
+  changelog point to `github.com/limxdynamics/tron2_rl_lab` instead of
+  the former `limx-tron2` organization; the README "Distribution" note
+  is removed.
+- `THIRD_PARTY_NOTICES.md`, `CONTRIBUTING.md`, `SECURITY.md`: references
+  to README line numbers, which no longer matched, now name the README
+  section instead.
+
+### Fixed
+- README: the training "common options" listed `--checkpoint_path` as
+  resuming from a checkpoint, but `train.py` only loads it together
+  with `--resume True`. It is now documented under Resume and Play
+  only.
 
 ### Pending owner sign-off (blocks first public tag)
 
@@ -147,5 +173,5 @@ First public release. Contents (planned):
 - Bundled USD / STL assets for the SF_TRON2A, WF_TRON2A, and
   DASF_TRON2A variants.
 
-[Unreleased]: https://github.com/limx-tron2/tron2_rl_lab/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/limx-tron2/tron2_rl_lab/releases/tag/v0.1.0
+[Unreleased]: https://github.com/limxdynamics/tron2_rl_lab/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/limxdynamics/tron2_rl_lab/releases/tag/v0.1.0

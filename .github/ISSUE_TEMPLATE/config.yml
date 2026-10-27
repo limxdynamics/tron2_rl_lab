@@ -13,7 +13,7 @@ contact_links:
       contact@limxdynamics.com with subject prefix
       [tron2_rl_lab hardware].
   - name: General questions
-    url: https://github.com/limx-tron2/tron2_rl_lab/discussions
+    url: https://github.com/limxdynamics/tron2_rl_lab/discussions
     about: >
       Use Discussions for how-to questions, training-setup help, or
       Isaac Sim / Isaac Lab integration quirks that are not yet a

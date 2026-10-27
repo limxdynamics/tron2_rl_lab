@@ -47,7 +47,7 @@ therefore limited, but not zero:
 
 **Runtime / hardware safety** — the physical procedure for bringing a
 policy onto a real robot (hoist the robot, verify IK, lower to the
-ground, then switch to `walk`; see `README.md:142-151`) is a product-
+ground, then switch to `walk`; see the README section "Real-hardware operating notes") is a product-
 safety concern, not a software CVE. Report hardware / operational
 safety issues to LimX product support, not through this channel.
 

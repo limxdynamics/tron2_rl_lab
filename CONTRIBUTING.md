@@ -57,7 +57,7 @@ Prerequisites:
 - A CUDA-capable GPU (≥ 12 GB VRAM recommended for 4096-env training).
 
 ```bash
-git clone https://github.com/limx-tron2/tron2_rl_lab.git
+git clone https://github.com/limxdynamics/tron2_rl_lab.git
 cd tron2_rl_lab
 
 # Editable install of the extension and the vendored rsl_rl fork.
@@ -204,7 +204,7 @@ Files under
 sibling `mdp/` modules define reward, termination, action, and event
 managers that shape any resulting policy. A policy trained here may
 later be deployed on real hardware — see
-`README.md:142-151` (吊起 → IK → 落地 → walk) for the on-hardware
+the README section "Real-hardware operating notes" (吊起 → IK → 落地 → walk) for the on-hardware
 bring-up sequence.
 
 Every PR that touches these modules must:
@@ -213,7 +213,7 @@ Every PR that touches these modules must:
 - Show a `play.py` run of the affected task, or a plot of the
   reward-term curve, demonstrating the intended effect.
 - Confirm the change does not remove or weaken a termination that
-  guards the hoist / IK / landing sequence in `README.md:142-151`.
+  guards the hoist / IK / landing sequence in the README section "Real-hardware operating notes".
 - Add a `CHANGELOG.md` entry under `## [Unreleased]`.
 
 For DASF_TRON2A, this policy also applies to
@@ -275,6 +275,15 @@ grep -rniE 'proprietary|confidential|todo: license|unknown license' \
 ```
 
 CI runs equivalent checks; local pre-checks save review round-trips.
+
+On a machine with Isaac Sim 5.1 / Isaac Lab 2.3.1 installed, also run
+an import smoke check and a short end-to-end training run:
+
+```bash
+python -c "import bipedal_locomotion; print(bipedal_locomotion.__file__)"
+python scripts/rsl_rl/train.py --task Isaac-Limx-SF-TRON2A-Blind-Flat-v0 \
+  --num_envs 16 --headless --max_iterations 2
+```
 
 ## Commit messages
 
