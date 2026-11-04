@@ -20,6 +20,8 @@
 
 # tron2_rl_lab
 
+> **TRON2 开源生态的一部分。** 上手路线和其他 TRON2 仓库：[TRON2 快速上手](https://github.com/limxdynamics/limxdynamics/blob/main/doc/quickstart_cn.md#tron2)。
+
 基于 [Isaac Lab](https://isaac-sim.github.io/IsaacLab/) 的 LimX **TRON2A**
 强化学习训练栈，使用 PPO 训练 locomotion 策略。本仓库专注于平地
 （Flat）训练，支持 SF（sole-foot）、WF（wheel-foot），以及由双足、

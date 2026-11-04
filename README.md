@@ -20,6 +20,8 @@
 
 # tron2_rl_lab
 
+> **Part of the TRON2 open-source ecosystem.** Where to start and the other TRON2 repositories: [TRON2 quick start](https://github.com/limxdynamics/limxdynamics/blob/main/doc/quickstart.md#tron2).
+
 Reinforcement learning training stack for the LimX **TRON2A** bipedal
 robot, built on top of
 [Isaac Lab](https://isaac-sim.github.io/IsaacLab/) and using PPO to
