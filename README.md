@@ -347,4 +347,3 @@ cite the repository:
 - **Hardware / real-robot safety incidents:** email
   `contact@limxdynamics.com` with subject prefix
   `[tron2_rl_lab hardware]`. Do not open a public issue.
-- **Company / commercial contact:** <https://www.limxdynamics.com>.

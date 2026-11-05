@@ -310,4 +310,3 @@ python scripts/rsl_rl/train.py --task <TASK> --resume True --load_run <run_name>
   [`SECURITY.md`](SECURITY.md)。
 - **硬件 / 实机安全事件：** 邮件 `contact@limxdynamics.com`，
   主题前缀 `[tron2_rl_lab hardware]`，请勿在公开 Issue 中提交。
-- **公司 / 商务联系：** <https://www.limxdynamics.com>。
