@@ -18,6 +18,7 @@
   <img src="https://img.shields.io/badge/Isaac%20Lab-2.3.1-2f6feb" alt="Isaac Lab 2.3.1" />
   <a href="https://github.com/limxdynamics/limxdynamics/blob/main/doc/wechat_qr.png"><img src="https://img.shields.io/badge/WeChat-Developer%20Community-07C160?logo=wechat&logoColor=white" alt="WeChat Community" /></a>
 </p>
+<p align="center"><sub>For partnership and procurement inquiries, contact <a href="mailto:opensource@limxdynamics.com">opensource@limxdynamics.com</a></sub></p>
 
 # tron2_rl_lab
 
